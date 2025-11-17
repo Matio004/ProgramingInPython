@@ -1,2 +1,6 @@
 .venv
 .idea
+zad2/*.csv
+zad2/*.json
+zad2/*.log
+*.zip
