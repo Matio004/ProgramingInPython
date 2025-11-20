@@ -170,7 +170,7 @@ class Sheep:
 
 
 if __name__ == '__main__':
-    arg_parser = ArgumentParser("Chase")
+    arg_parser = ArgumentParser("chase")
     arg_parser.add_argument('-c', '--config', type=str,
                             help='load limits of sheep and wolf from .ini file')
     arg_parser.add_argument('-l', '--log', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
