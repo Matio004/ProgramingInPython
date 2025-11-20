@@ -10,7 +10,7 @@ from random import choice, uniform
 import json
 import csv
 
-logger = logging.getLogger(__name__)  #TODO INFO LOGGING
+logger = logging.getLogger(__name__)
 
 MAX_ROUNDS = 50
 SHEEP_COUNT = 15
@@ -18,14 +18,22 @@ SHEEP_RANGE = 10.
 SHEEP_MOVE_DISTANCE = .5
 WOLF_MOVE_DISTANCE = 1.
 
+
 class Direction(Enum):
+    r"""
+     ┌──N──┐
+    │    /  │
+    │   /   │
+    │       │
+     └──S──┘
+    """
     NORTH = (0, 1)
     SOUTH = (0, -1)
     EAST = (1, 0)
     WEST = (-1, 0)
 
 
-def dist2(pos1, pos2):
+def dist2(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
     temp = 0
     for c1, c2 in zip(pos1, pos2):
         temp += (c1 - c2) ** 2
@@ -33,7 +41,12 @@ def dist2(pos1, pos2):
 
 
 class Herd:
-    def __init__(self, herd):
+    r"""
+     _-(_)-  _-(_)-  _-(_)-
+   `(___)  `(___)  `(___)
+    // \\   // \\   // \\
+    """
+    def __init__(self, herd: list[Sheep]):
         self._herd = herd
 
     def __getitem__(self, item):
@@ -54,14 +67,29 @@ class Herd:
         return len(self) != 0
 
     @property
-    def positions(self):
+    def positions(self) -> list[Sheep | None]:
         return [sheep.pos for sheep in self._herd]
 
 
 class Wolf:
-    def __init__(self, pos, move_distance):
+    r"""
+                         .
+                        / V\
+                      / `  /
+                     <<   |
+                     /    |
+                   /      |
+                 /        |
+               /    \  \ /
+              (      ) | |
+      ________|   _/_  | |
+    <__________\______)\__)
+    """
+
+    move_distance: float
+
+    def __init__(self, pos: tuple[float, float]):
         self.pos = pos
-        self.move_distance = move_distance
 
     def __repr__(self):
         return f'Wolf(pos={self.pos}, move_distance={self.move_distance})'
@@ -72,19 +100,20 @@ class Wolf:
     def move(self, herd: Herd) -> Sheep:
         target, distance = self.get_closest_sheep(herd)
         logger.debug('Wolf determined the closest sheep: Sheep(id=%d, distance=%f)', target.index, distance)
-        logger.info('Wolf moved')
 
         if distance <= self.move_distance:
             self.pos = target.pos
+            logger.info('Wolf moved')
             target.alive = False
             logger.info('Wolf has eaten sheep #%d', target.index)
         else:
+            logger.info('Wolf is chasing sheep #%d', target.index)
             direction = target.pos[0] - self.pos[0], target.pos[1] - self.pos[1]
 
             length = sqrt(direction[0] * direction[0] + direction[1] * direction[1])
             self.pos = (self.pos[0] + (direction[0] / length) * self.move_distance,
                         self.pos[1] + (direction[1] / length) * self.move_distance)
-            logger.info('Wolf is chasing sheep #%d', target.index)
+            logger.info('Wolf moved')
         logger.debug('Wolf moved to pos=(%f, %f))', *self.pos)
         return target
 
@@ -101,10 +130,25 @@ class Wolf:
 
 
 class Sheep:
-    def __init__(self, index, pos, move_distance):
+    r"""
+                     _,._
+                 __.'   _)
+                <_,)'.-"a\
+                  /' (    \
+      _.-----..,-'   (`"--^
+     //              |
+    (|   `;      ,   |
+      \   ;.----/  ,/
+       ) // /   | |\ \
+       \ \\`\   | |/ /
+        \ \\ \  | |\/
+         `" `"  `"`
+    """
+    move_distance: float
+
+    def __init__(self, index: int, pos: tuple[float, float]):
         self.index = index
         self._pos = pos
-        self.move_distance = move_distance
         self.alive = True
 
         logger.debug('Sheep #%d initialized (pos=(%f, %f))', self.index, *self._pos)
@@ -115,69 +159,83 @@ class Sheep:
     def move(self):
         direction = choice(list(Direction))
         direction_tuple = direction.value
-        logger.debug('Sheep #%d has chosen to move to the %s', self.index, direction.name)  # todo zapyać czy może byc samo direction
+        logger.debug('Sheep #%d has chosen to move to the %s', self.index, direction)
         self._pos = (self._pos[0] + direction_tuple[0] * self.move_distance,
                      self._pos[1] + direction_tuple[1] * self.move_distance)
         logger.debug('Sheep #%d moved to pos=(%f, %f))', self.index, *self._pos)
 
     @property
-    def pos(self):
+    def pos(self) -> tuple[float, float] | None:
         return self._pos if self.alive else None
 
 
 if __name__ == '__main__':
     arg_parser = ArgumentParser("Chase")
-    arg_parser.add_argument('-c', '--config', type=str)
-    arg_parser.add_argument('-l', '--log', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
-    arg_parser.add_argument('-r', '--rounds', type=int)
-    arg_parser.add_argument('-s', '--sheep', type=int)
-    arg_parser.add_argument('-w', '--wait', action='store_true')
+    arg_parser.add_argument('-c', '--config', type=str,
+                            help='load limits of sheep and wolf from .ini file')
+    arg_parser.add_argument('-l', '--log', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                            help='set up logging level')
+    arg_parser.add_argument('-r', '--rounds', type=int,
+                            help='change maximum rounds')
+    arg_parser.add_argument('-s', '--sheep', type=int,
+                            help='change number og sheep')
+    arg_parser.add_argument('-w', '--wait', action='store_true',
+                            help='enable waiting after each round')
     namespace = arg_parser.parse_args(sys.argv[1:])
 
     logging.basicConfig(filename='chase.log', level=namespace.log)
+
+    max_rounds = MAX_ROUNDS
+    sheep_count = SHEEP_COUNT
+    sheep_range = SHEEP_RANGE
+    sheep_move_distance = SHEEP_MOVE_DISTANCE
+    wolf_move_distance = WOLF_MOVE_DISTANCE
 
     config = ConfigParser()
     if namespace.config:
         if os.path.exists(namespace.config):
             config.read(namespace.config)
 
-            SHEEP_RANGE = float(config['Sheep']['InitPosLimit'])
-            SHEEP_MOVE_DISTANCE = float(config['Sheep']['MoveDist'])
+            sheep_range = float(config['Sheep']['InitPosLimit'])  # nie tak nie eleganckie sheep_range
+            sheep_move_distance = float(config['Sheep']['MoveDist'])
 
-            WOLF_MOVE_DISTANCE = float(config['Wolf']['MoveDist'])
+            wolf_move_distance = float(config['Wolf']['MoveDist'])
 
-            if SHEEP_RANGE <= 0:
+            if sheep_range <= 0:
                 raise ValueError('Initial position of sheep must by positive number.')
-            if SHEEP_MOVE_DISTANCE <= 0:
+            if sheep_move_distance <= 0:
                 raise ValueError('Distance of sheep movement must by positive number.')
-            if WOLF_MOVE_DISTANCE <= 0:
+            if wolf_move_distance <= 0:
                 raise ValueError('Distance of sheep movement must by positive number.')
 
             logger.debug(
                 'Config file loaded. SheepInitPosLimit: %f, SheepMoveDist: %f, WolfMoveDist: %f',
-                SHEEP_RANGE, SHEEP_MOVE_DISTANCE, WOLF_MOVE_DISTANCE
+                sheep_range, sheep_move_distance, wolf_move_distance
             )
 
     if namespace.rounds is not None:
         if namespace.rounds <= 0:
             raise ValueError("Maximum number of rounds should be an integer greater than zero.")
-        MAX_ROUNDS = namespace.rounds
+        max_rounds = namespace.rounds
 
     if namespace.sheep is not None:
         if namespace.sheep <= 0:
             raise ValueError("Maximum number of sheep should be an integer greater than zero.")
-        SHEEP_COUNT = namespace.sheep
+        sheep_count = namespace.sheep
 
-    sheep_list = [Sheep(i, (uniform(-SHEEP_RANGE, SHEEP_RANGE),
-                            uniform(-SHEEP_RANGE, SHEEP_RANGE)), SHEEP_MOVE_DISTANCE) for i in range(SHEEP_COUNT)]
-    logger.info('Initial position of all sheep determined')  # todo zapytać czy to może być przed
+    Sheep.move_distance = sheep_move_distance
+    Wolf.move_distance = wolf_move_distance
+
+    sheep_list = [Sheep(i, (uniform(-sheep_range, sheep_range),
+                            uniform(-sheep_range, sheep_range))) for i in range(sheep_count)]
+    logger.info('Initial position of all sheep determined')
     herd = Herd(sheep_list)
-    wolf = Wolf((0, 0), WOLF_MOVE_DISTANCE)
+    wolf = Wolf((0, 0))
 
     json_list = []
     counts_alive_sheep = []
 
-    for r in range(MAX_ROUNDS):
+    for r in range(max_rounds):
         logger.info('Round #%d started', r)
         print('Round', r)
 
@@ -206,12 +264,15 @@ if __name__ == '__main__':
         if namespace.wait:
             input()
     else:
-        logger.info('Simulation terminated, cause: predefined maximum number of rounds has been reached')
+        logger.info(
+            'Simulation terminated, cause: predefined maximum number of rounds (max_rounds=%d) has been reached',
+            max_rounds
+        )
     with open('pos.json', 'w') as file:
         json.dump(json_list, file, indent=4)
-    logger.debug('Information saved to pos.json')
+    logger.debug('Information saved to %s', os.path.abspath('pos.json'))
 
     with open('alive.csv', 'w') as file:
         csv_writer = csv.writer(file, lineterminator='\n')
         csv_writer.writerows(enumerate(counts_alive_sheep))
-    logger.debug('Information saved to alive.csv')
+    logger.debug('Information saved to %s', os.path.abspath('alive.csv'))
