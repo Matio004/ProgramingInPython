@@ -4,3 +4,4 @@ zad2/*.csv
 zad2/*.json
 zad2/*.log
 *.zip
+__pycache__

@@ -86,7 +86,7 @@ class Wolf:
     <__________\______)\__)
     """
 
-    move_distance: float
+    move_distance: float = WOLF_MOVE_DISTANCE
 
     def __init__(self, pos: tuple[float, float]):
         self.pos = pos
@@ -144,7 +144,7 @@ class Sheep:
         \ \\ \  | |\/
          `" `"  `"`
     """
-    move_distance: float
+    move_distance: float = SHEEP_MOVE_DISTANCE
 
     def __init__(self, index: int, pos: tuple[float, float]):
         self.index = index
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         if os.path.exists(namespace.config):
             config.read(namespace.config)
 
-            sheep_range = float(config['Sheep']['InitPosLimit'])  # nie tak nie eleganckie sheep_range
+            sheep_range = float(config['Sheep']['InitPosLimit'])
             sheep_move_distance = float(config['Sheep']['MoveDist'])
 
             wolf_move_distance = float(config['Wolf']['MoveDist'])
