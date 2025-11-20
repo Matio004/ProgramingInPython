@@ -40,6 +40,46 @@ def dist2(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
     return temp
 
 
+class Sheep:
+    r"""
+                     _,._
+                 __.'   _)
+                <_,)'.-"a\
+                  /' (    \
+      _.-----..,-'   (`"--^
+     //              |
+    (|   `;      ,   |
+      \   ;.----/  ,/
+       ) // /   | |\ \
+       \ \\`\   | |/ /
+        \ \\ \  | |\/
+         `" `"  `"`
+    """
+    move_distance: float = SHEEP_MOVE_DISTANCE
+
+    def __init__(self, index: int, pos: tuple[float, float]):
+        self.index = index
+        self._pos = pos
+        self.alive = True
+
+        logger.debug('Sheep #%d initialized (pos=(%f, %f))', self.index, *self._pos)
+
+    def __repr__(self):
+        return f'Sheep(pos={self._pos}, move_distance={self.move_distance}, alive={self.alive})'
+
+    def move(self):
+        direction = choice(list(Direction))
+        direction_tuple = direction.value
+        logger.debug('Sheep #%d has chosen to move to the %s', self.index, direction)
+        self._pos = (self._pos[0] + direction_tuple[0] * self.move_distance,
+                     self._pos[1] + direction_tuple[1] * self.move_distance)
+        logger.debug('Sheep #%d moved to pos=(%f, %f))', self.index, *self._pos)
+
+    @property
+    def pos(self) -> tuple[float, float] | None:
+        return self._pos if self.alive else None
+
+
 class Herd:
     r"""
      _-(_)-  _-(_)-  _-(_)-
@@ -127,46 +167,6 @@ class Wolf:
                 closest_distance = sheep_distance
                 closest_sheep = sheep
         return closest_sheep, sqrt(closest_distance)
-
-
-class Sheep:
-    r"""
-                     _,._
-                 __.'   _)
-                <_,)'.-"a\
-                  /' (    \
-      _.-----..,-'   (`"--^
-     //              |
-    (|   `;      ,   |
-      \   ;.----/  ,/
-       ) // /   | |\ \
-       \ \\`\   | |/ /
-        \ \\ \  | |\/
-         `" `"  `"`
-    """
-    move_distance: float = SHEEP_MOVE_DISTANCE
-
-    def __init__(self, index: int, pos: tuple[float, float]):
-        self.index = index
-        self._pos = pos
-        self.alive = True
-
-        logger.debug('Sheep #%d initialized (pos=(%f, %f))', self.index, *self._pos)
-
-    def __repr__(self):
-        return f'Sheep(pos={self._pos}, move_distance={self.move_distance}, alive={self.alive})'
-
-    def move(self):
-        direction = choice(list(Direction))
-        direction_tuple = direction.value
-        logger.debug('Sheep #%d has chosen to move to the %s', self.index, direction)
-        self._pos = (self._pos[0] + direction_tuple[0] * self.move_distance,
-                     self._pos[1] + direction_tuple[1] * self.move_distance)
-        logger.debug('Sheep #%d moved to pos=(%f, %f))', self.index, *self._pos)
-
-    @property
-    def pos(self) -> tuple[float, float] | None:
-        return self._pos if self.alive else None
 
 
 if __name__ == '__main__':
