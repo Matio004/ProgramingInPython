@@ -1,14 +1,13 @@
+import csv
+import json
 import logging
 import os.path
 import sys
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from enum import Enum
-from math import sqrt
+from math import sqrt, hypot
 from random import choice, uniform
-
-import json
-import csv
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +33,7 @@ class Direction(Enum):
 
 
 def dist2(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
-    temp = 0
-    for c1, c2 in zip(pos1, pos2):
-        temp += (c1 - c2) ** 2
-    return temp
+    return sum((c1 - c2) ** 2 for c1, c2 in zip(pos1, pos2))
 
 
 class Sheep:
@@ -150,7 +146,7 @@ class Wolf:
             logger.info('Wolf is chasing sheep #%d', target.index)
             direction = target.pos[0] - self.pos[0], target.pos[1] - self.pos[1]
 
-            length = sqrt(direction[0] * direction[0] + direction[1] * direction[1])
+            length = hypot(*direction)
             self.pos = (self.pos[0] + (direction[0] / length) * self.move_distance,
                         self.pos[1] + (direction[1] / length) * self.move_distance)
             logger.info('Wolf moved')
@@ -170,7 +166,10 @@ class Wolf:
 
 
 if __name__ == '__main__':
-    arg_parser = ArgumentParser("chase")
+    arg_parser = ArgumentParser(
+        'chase', description='Simulates a wolf chasing sheep, in a 2D Cartesian coordinate system.',
+        epilog='Program developed for Programing in Python course.'
+    )
     arg_parser.add_argument('-c', '--config', type=str,
                             help='load limits of sheep and wolf from .ini file')
     arg_parser.add_argument('-l', '--log', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -183,7 +182,10 @@ if __name__ == '__main__':
                             help='enable waiting after each round')
     namespace = arg_parser.parse_args(sys.argv[1:])
 
-    logging.basicConfig(filename='chase.log', level=namespace.log)
+    if namespace.log:
+        logging.basicConfig(filename='chase.log', level=namespace.log)
+    else:
+        logging.disable()
 
     max_rounds = MAX_ROUNDS
     sheep_count = SHEEP_COUNT
@@ -206,12 +208,14 @@ if __name__ == '__main__':
             if sheep_move_distance <= 0:
                 raise ValueError('Distance of sheep movement must by positive number.')
             if wolf_move_distance <= 0:
-                raise ValueError('Distance of sheep movement must by positive number.')
+                raise ValueError('Distance of wolf movement must by positive number.')
 
             logger.debug(
                 'Config file loaded. SheepInitPosLimit: %f, SheepMoveDist: %f, WolfMoveDist: %f',
                 sheep_range, sheep_move_distance, wolf_move_distance
             )
+        else:
+            raise FileNotFoundError('Given config file does not exist.')
 
     if namespace.rounds is not None:
         if namespace.rounds <= 0:
